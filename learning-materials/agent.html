@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人学习设计 · AI Agent（智能体）概念</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --text:#1f2937; --sub:#6b7280;
+    --border:#e5e7eb; --accent:#2563eb; --accent-soft:#eff6ff;
+    --ok:#16a34a; --warn:#d97706; --danger:#dc2626; --code-bg:#f3f4f6;
+    --purple:#7c3aed; --purple-soft:#f5f3ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.8;padding:24px 16px 70px;}
+  .container{max-width:820px;margin:0 auto;}
+  /* header */
+  .header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;border-radius:18px;padding:32px 30px;margin-bottom:22px;}
+  .header .tag{display:inline-block;background:rgba(255,255,255,.18);padding:3px 12px;border-radius:20px;font-size:12px;margin-bottom:12px;letter-spacing:1px;}
+  .header h1{font-size:27px;margin-bottom:6px;}
+  .header .sub{opacity:.92;font-size:14.5px;}
+  .header .meta{margin-top:14px;font-size:12.5px;opacity:.85;display:flex;gap:16px;flex-wrap:wrap;}
+  /* sections */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 26px;margin-bottom:20px;}
+  .card h2{font-size:20px;margin-bottom:16px;display:flex;align-items:center;gap:10px;color:#1e3a8a;}
+  .card h2 .emo{font-size:22px;}
+  .card h3{font-size:16px;color:#374151;margin:18px 0 8px;}
+  .card p{margin:10px 0;color:#374151;}
+  .lead{background:var(--accent-soft);border-left:4px solid var(--accent);padding:14px 18px;border-radius:8px;font-size:15px;color:#1e3a8a;margin:14px 0;}
+  .note{background:#fffbeb;border-left:4px solid var(--warn);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#92400e;}
+  .ok-box{background:#f0fdf4;border-left:4px solid var(--ok);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#14532d;}
+  .bad-box{background:#fef2f2;border-left:4px solid var(--danger);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#7f1d1d;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:"SF Mono",Consolas,"Courier New",monospace;font-size:13.5px;overflow-x:auto;margin:12px 0;color:#111;}
+  code{font-family:"SF Mono",Consolas,monospace;background:var(--code-bg);padding:2px 6px;border-radius:5px;font-size:.9em;color:#b91c1c;}
+  pre code{background:none;padding:0;color:inherit;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px;}
+  th,td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:#f1f5f9;color:#1e3a8a;font-weight:600;}
+  tr:nth-child(even) td{background:#fafafa;}
+  ul,ol{margin:10px 0 10px 24px;}
+  li{margin:6px 0;}
+  /* TOC */
+  .toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 26px;margin-bottom:20px;}
+  .toc b{color:#1e3a8a;}
+  .toc ol{margin:10px 0 0 22px;}
+  .toc li{margin:5px 0;}
+  .toc a{color:var(--accent);text-decoration:none;}
+  .toc a:hover{text-decoration:underline;}
+  /* 组件 */
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;}
+  .flow .step{background:var(--purple-soft);border:1px solid #ddd6fe;color:var(--purple);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;}
+  .flow .arrow{color:#cbd5e1;font-size:14px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0;}
+  @media(max-width:640px){.two-col{grid-template-columns:1fr;}}
+  .vs{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13.5px;}
+  .vs .title{font-weight:700;margin-bottom:6px;color:#1e3a8a;}
+  /* quiz */
+  .quiz{border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:14px 0;background:#fafcff;}
+  .quiz .q{font-weight:700;margin-bottom:12px;font-size:15px;}
+  .quiz .options{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .quiz .opt{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;font-size:14px;transition:all .15s;}
+  .quiz .opt:hover{border-color:var(--accent);}
+  .quiz input{margin-top:4px;accent-color:var(--accent);}
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 26px;border-radius:9px;font-size:14.5px;cursor:pointer;font-weight:600;}
+  .btn:hover{opacity:.9;}
+  .r{margin-top:10px;padding:12px 16px;border-radius:8px;font-size:14px;display:none;}
+  .r.ok{display:block;background:#f0fdf4;color:#14532d;border:1px solid #bbf7d0;}
+  .r.bad{display:block;background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca;}
+  .r.warn{display:block;background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
+  /* answer toggle */
+  .ans-toggle{margin-top:8px;font-size:13px;color:var(--accent);cursor:pointer;user-select:none;}
+  /* source */
+  .src{font-size:13px;}
+  .src li{margin:8px 0;}
+  .src a{color:var(--accent);word-break:break-all;}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:30px;}
+  .badge{display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:1px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 头部 -->
+  <div class="header">
+    <span class="tag">concept-learner · 个人学习设计</span>
+    <h1>🤖 AI Agent（智能体）到底是什么？</h1>
+    <div class="sub">为"理解会用"深度定制 · 用大白话把一个热门概念彻底讲懂</div>
+    <div class="meta">
+      <span>📅 学习日期：2026-09-06</span>
+      <span>🎯 学习目标：理解 Agent 的定义、核心机制与边界</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <b>📑 本资料导航</b>
+    <ol>
+      <li><a href="#goal">学习目标</a></li>
+      <li><a href="#question">核心问题</a></li>
+      <li><a href="#explain">个人化解释（先建立直觉）</a></li>
+      <li><a href="#mechanism">核心机制：Agent 怎么工作</a></li>
+      <li><a href="#scene">应用场景</a></li>
+      <li><a href="#boundary">容易混淆的边界</a></li>
+      <li><a href="#quiz">自测问题</a></li>
+      <li><a href="#source">资料来源</a></li>
+    </ol>
+  </div>
+
+  <!-- 学习目标 -->
+  <div class="card" id="goal">
+    <h2><span class="emo">🎯</span>1. 学习目标（学完能做什么）</h2>
+    <div class="lead">学完本资料，你应当<b>能够</b>：</div>
+    <ol>
+      <li><b>用自己的话</b>向一个完全不懂 AI 的朋友解释"什么是 Agent"，他听完能点头。</li>
+      <li>说出 Agent 与传统"聊天机器人"的<b>关键区别</b>（会用工具、会规划、能执行）。</li>
+      <li>看懂一张 Agent 工作原理图，能指出其中"思考、行动、观察"三个环节。</li>
+      <li>举例说明 3 个生活中的 Agent 应用场景，并判断它们为什么算 Agent。</li>
+    </ol>
+    <div class="note">📌 <b>学习边界（本轮暂不深究）</b>：具体框架（LangGraph、AutoGen 等）的编程实现、ReAct 提示词细节、多智能体协作。这些留给下一轮进阶。</div>
+  </div>
+
+  <!-- 核心问题 -->
+  <div class="card" id="question">
+    <h2><span class="emo">❓</span>2. 核心问题（用问题驱动学习）</h2>
+    <p>与其直接背定义，不如先带着这 4 个问题去读，读的过程自己找答案：</p>
+    <ol>
+      <li>同样是"和 AI 对话"，<b>为什么聊天机器人只能"说"</b>，而 Agent 能"帮你把事办了"？</li>
+      <li>Agent 是怎么做到"自己决定下一步做什么"的？它背后有没有"脑子"？</li>
+      <li>一个 App（比如点餐软件）和一个 Agent，<b>体验上最本质的差别</b>是什么？</li>
+      <li>"能自动执行脚本"的代码，和真正的 Agent，<b>差在哪一步</b>？</li>
+    </ol>
+    <p class="note" style="font-size:13px">💡 读完下面内容后，回头看看这 4 个问题你能否独立回答。答不出来，说明某个环节还没吃透，回去再看。</p>
+  </div>
+
+  <!-- 个人化解释 -->
+  <div class="card" id="explain">
+    <h2><span class="emo">🧠</span>3. 个人化解释（先建直觉，再给定义）</h2>
+
+    <h3>3.1 一个生活化类比：把 Agent 想成一位"实习秘书"</h3>
+    <p>想象你雇了一位<b>实习秘书</b>。普通聊天机器人像一部"只会答话的电话"——你问一句它答一句，它<b>不会主动去查资料、不会替你打电话订餐厅</b>。</p>
+    <p>而 Agent 这位"实习秘书"不一样：</p>
+    <ul>
+      <li>你说一句"帮我订周五晚上的双人餐"，它会 <b>自己判断</b>这需要：先查你的日程有空 → 再打开订餐软件比价 → 下单 → 把确认结果告诉你。</li>
+      <li>中途软件打不开，它会<b>换个方式</b>（改用网页订），而不是干等报错。</li>
+      <li>它甚至<b>记得</b>你上次说过"不吃辣"，这次自动帮你避开川菜。</li>
+    </ul>
+    <p>用一句话总结直觉：<b>聊天机器人负责"说"，Agent 负责"做"——它会理解目标、拆步骤、用工具、把事办完。</b></p>
+
+    <h3>3.2 从直觉升级到精确：Agent 的"学术版"定义</h3>
+    <div class="lead">学术定义：Agent 是<b>能感知（Perceive）环境 → 决策（Decide）→ 行动（Act）以达成目标</b>的自主实体。</div>
+    <p>把这个定义"翻译"回秘书比喻就通了：</p>
+    <table>
+      <tr><th>定义要素</th><th>秘书比喻</th><th>技术含义</th></tr>
+      <tr><td><b>感知</b></td><td>"听到"你说话、看到日程</td><td>接收输入（文本、API 数据、传感器）</td></tr>
+      <tr><td><b>决策</b></td><td>"判断"该先做什么</td><td>大模型推理，规划任务顺序</td></tr>
+      <tr><td><b>行动</b></td><td>"动手"订餐、发邮件</td><td>调用工具/执行代码/操作软件</td></tr>
+      <tr><td><b>目标驱动</b></td><td>记着"要订好餐"这个目标</td><td>所有步骤都服务于最终目标</td></tr>
+    </table>
+    <div class="note">⚠️ 注意：Agent ≠ 只会背话术的"智能客服"。真正的 Agent 关键在于它<b>能调用外部工具、能根据结果调整行为</b>，而不是只会按预设脚本回答。</div>
+  </div>
+
+  <!-- 核心机制 -->
+  <div class="card" id="mechanism">
+    <h2><span class="emo">⚙️</span>4. 核心机制：Agent 是怎么一步步干活的</h2>
+    <p>Agent 的运作可以看成一个<b>循环</b>（业界常叫"感知-行动循环"）。真正的大模型 Agent 普遍遵循这样一个工作环：</p>
+
+    <div class="flow">
+      <span class="step">🧭 目标</span><span class="arrow">→</span>
+      <span class="step">🤔 思考 Thought</span><span class="arrow">→</span>
+      <span class="step">🧰 调用工具 Action</span><span class="arrow">→</span>
+      <span class="step">👀 观察 Observation</span><span class="arrow">→</span>
+      <span class="step">🔄 再思考…</span><span class="arrow">→</span>
+      <span class="step">🏁 完成任务</span>
+    </div>
+
+    <p>用"订餐"举例走一遍这个环：</p>
+    <ol>
+      <li><b>目标</b>：帮你订到周五双人晚餐。</li>
+      <li><b>思考</b>（大模型出主意）："我得先查餐厅和空位。" → 决定调用"搜索餐厅"这个工具。</li>
+      <li><b>行动</b>（真的去调用工具）：执行搜索，拿到餐厅列表。</li>
+      <li><b>观察</b>（看工具返回的结果）：看到"某家有空位、符合口味"。</li>
+      <li><b>再思考</b>："不错，就订这家" → 调用"下单"工具……</li>
+      <li>直到目标达成，输出最终确认给你。</li>
+    </ol>
+
+    <h3>4.1 Agent 与传统程序/机器人的本质差异</h3>
+    <table>
+      <tr><th>对比维度</th><th>传统脚本 / 规则机器人</th><th>真正的 AI Agent</th></tr>
+      <tr><td><b>遇新情况</b></td><td>没写过的分支就<code>报错/卡住</code></td><td>能临场判断、换路径</td></tr>
+      <tr><td><b>是否学习</b></td><td>否，完全按代码</td><td>能利用大模型能力推理，可结合记忆</td></tr>
+      <tr><td><b>自主性</b></td><td>每一步都要人指定</td><td>给定目标后可自主规划多步</td></tr>
+      <tr><td><b>任务复杂度</b></td><td>适合固定、简单</td><td>能处理开放、多步骤复杂任务</td></tr>
+    </table>
+
+    <h3>4.2 Agent 的"三件套"：大脑、工具、记忆</h3>
+    <div class="two-col">
+      <div class="vs"><div class="title">🧠 大脑（LLM 推理）</div>负责"想"。它不做具体执行，而是决定<b>该调什么工具、下一步做什么</b>。相当于秘书的决策能力。</div>
+      <div class="vs"><div class="title">🧰 工具（Tools）</div>让 Agent 能"动手"：搜索、调 API、执行代码、操作 App。这是<b>Agent 与纯聊天最关键的差别</b>——没有工具，它只能嘴上说说。</div>
+    </div>
+    <div class="two-col">
+      <div class="vs"><div class="title">🗂️ 记忆（Memory）</div>短期记忆（记住当前对话上下文）+ 长期记忆（记住你的偏好、历史）。让服务<b>个性化、连续</b>。</div>
+      <div class="vs"><div class="title">🎯 目标（Goal）</div>贯穿始终的"北极星"。决定什么时候算"完成"，避免 Agent 漫无目的跑偏。</div>
+    </div>
+    <div class="ok-box">✅ <b>一句话记机制</b>：<b>大脑想 → 工具做 → 观察结果 → 再想</b>，如此循环，直到达成你给的目标。这就是 Agent 干活的全部秘密。</div>
+  </div>
+
+  <!-- 应用场景 -->
+  <div class="card" id="scene">
+    <h2><span class="emo">🌍</span>5. 应用场景（Agent 都在哪儿干活）</h2>
+    <table>
+      <tr><th>场景</th><th>Agent 怎么帮人</th><th>为什么算 Agent</th></tr>
+      <tr><td><b>个人助理 / 手机</b></td><td>"帮我点杯咖啡送回家"——自动下单、付钱</td><td>多步骤 + 调用 App + 记住偏好</td></tr>
+      <tr><td><b>客户服务</b></td><td>自动查订单、退换货、升级工单</td><td>能判断并调用后台系统，不止聊天</td></tr>
+      <tr><td><b>软件研发（编码助手）</b></td><td>读代码、改文件、跑测试、修 bug</td><td>能"动手"操作代码库（工具调用）</td></tr>
+      <tr><td><b>日程 / 行程规划</b></td><td>读日历变动、协调会议、订机酒</td><td>跨应用 + 多步规划 + 目标导向</td></tr>
+      <tr><td><b>数据分析 / 自动化</b></td><td>自动写 SQL 查数、生成报告</td><td>能执行查询、迭代改进结果</td></tr>
+    </table>
+    <div class="note">💡 判断一个产品"是不是真 Agent"的最快方法：看它<b>能不能自主调用外部工具并把多步任务做完</b>，而不是仅靠一次对话生成文字。</div>
+  </div>
+
+  <!-- 边界 -->
+  <div class="card" id="boundary">
+    <h2><span class="emo">🚧</span>6. 容易混淆的边界（别搞混这些）</h2>
+
+    <h3>6.1 Agent ≠ 聊天机器人 / 智能客服</h3>
+    <div class="bad-box">❌ <b>误区</b>：能跟我对话的 AI 就是 Agent。</div>
+    <div class="ok-box">✅ <b>真相</b>：普通聊天机器人只"生成文字回复"，<b>不会去执行操作</b>。Agent 必须能<b>调用工具、完成任务</b>。会说 ≠ 会做。</div>
+
+    <h3>6.2 Agent ≠ 简单自动化脚本</h3>
+    <div class="bad-box">❌ <b>误区</b>：能自动跑任务的程序就是 Agent。</div>
+    <div class="ok-box">✅ <b>真相</b>：脚本是"写死的流程"，遇到没预期的情况就崩。Agent 有<b>推理能力</b>，能临场判断、灵活应变。所以"能学习、能判断"才是关键。</div>
+
+    <h3>6.3 "AI Agent" 与 "Agentic AI" 的细微差别</h3>
+    <div class="vs">
+      <p style="font-size:13.5px">两者常被混用，但侧重不同：<b>AI Agent</b> 常指"一个能自主完成任务的智能体"；<b>Agentic AI</b> 更强调<b>高度自主</b>，几乎不需要人干预。行业里的趋势是从"AI Agent"走向更自主的"Agentic AI"。</p>
+    </div>
+
+    <h3>6.4 Agent ≠ 一定是"人形机器人"</h3>
+    <div class="bad-box">❌ <b>误区</b>：一说 Agent 就想到机器人。</div>
+    <div class="ok-box">✅ <b>真相</b>：绝大多数 Agent 是<b>纯软件</b>（代码 + 大模型），没有身体。它"执行器"就是代码、API 调用这些虚拟工具。物理机器人只是 Agent 的一种特殊形态。</div>
+  </div>
+
+  <!-- 我的理解 -->
+  <div class="card" id="myunderstanding">
+    <h2><span class="emo">💭</span>7. 我的理解（个人复盘）</h2>
+    <p>下面这段是我消化后用自己的话写下的（替代"照搬原文"）。如果你通读后发现更像 AI 腔、不像"我"，请替换成你自己的真实感受——下面的句子只作为<b>动笔模板</b>。</p>
+    <div class="lead">对我触动最大的，是把 Agent 想成"一位<u>实习秘书</u>"。过去我以为"能自动回消息"就是智能，现在才明白关键差异是<b>会不会自己规划并调工具把事办成</b>。它没有真正的"意愿"，只是在一个"想→做→看结果"的循环里不断替我推进。学完我反而更清楚：与其期待 Agent 像人一样"有主见"，不如把它当作一个<b>流程感很强、但需要我把目标和边界交代清楚</b>的执行者——这改变了我在实际提示里下指令的方式。</div>
+    <div class="note">📌 <b>待你替换/补充</b>：这里只填了"模板式"的体会。请改成你自己的经历——比如你在哪些真实工具里遇到过 Agent？它做得好/翻车的一次是什么？</div>
+  </div>
+
+  <!-- 自测 -->
+  <div class="card" id="quiz">
+    <h2><span class="emo">✅</span>8. 自测问题（检查你是真懂还是假懂）</h2>
+    <p style="font-size:13.5px;color:var(--sub)">共 5 题，做完点"提交"看判定与讲解。第 4、5 题是"讲给别人听"式，请在心里口头作答后再看答案。</p>
+
+    <div class="quiz">
+      <p class="q">Q1. 判断：一家电商的"AI 客服"只能回复"您的包裹在运输中"，不能查物流、不能改地址。它是 Agent 吗？</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q1" value="yes"> 是 Agent，因为它在用 AI 对话</label>
+        <label class="opt"><input type="radio" name="q1" value="no"> 不算真 Agent，因为它只会说、不能调用系统干活</label>
+      </div>
+      <div class="r" id="r1"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="q">Q2. Agent 与"写死的自动化脚本"最本质的区别是？</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q2" value="a"> 脚本更快</label>
+        <label class="opt"><input type="radio" name="q2" value="b"> 脚本更便宜</label>
+        <label class="opt"><input type="radio" name="q2" value="c"> Agent 有推理能力，能临场判断与应变</label>
+      </div>
+      <div class="r" id="r2"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="q">Q3. Agent 核心工作循环的正确顺序是？（选最完整的一项）</p>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q3" value="a"> 直接生成答案 → 结束</label>
+        <label class="opt"><input type="radio" name="q3" value="b"> 感知/目标 → 思考 → 调用工具 → 观察结果 →（循环）→ 完成</label>
+        <label class="opt"><input type="radio" name="q3" value="c"> 收集数据 → 存数据库</label>
+      </div>
+      <div class="r" id="r3"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="q">Q4. （口头考）请用一句话向完全不懂技术的外婆解释"Agent 和普通聊天机器人有啥不同"。</p>
+      <div class="ans-toggle" onclick="toggleAns(4)">👀 点击看参考说法</div>
+      <div class="r" id="r4"></div>
+    </div>
+
+    <div class="quiz">
+      <p class="q">Q5. （口头考）给自己举 1 个"看起来像智能、其实不是真 Agent"的例子，并说明为什么。</p>
+      <div class="ans-toggle" onclick="toggleAns(5)">👀 点击看参考说法</div>
+      <div class="r" id="r5"></div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <button class="btn" onclick="submit()">提交检查</button>
+      <button class="btn" style="background:#6b7280;margin-left:10px;" onclick="reset()">重做</button>
+    </div>
+  </div>
+
+  <!-- 资料来源 -->
+  <div class="card" id="source">
+    <h2><span class="emo">🔗</span>9. 资料来源（真实、可核查）</h2>
+    <p style="font-size:13px;color:var(--sub)">以下为编写本资料参考的真实权威来源，均已核对存在，可点开进一步学习：</p>
+    <ul class="src">
+      <li><span class="badge">国内开源教程</span> <b>Datawhale《Hello-Agents / 从零开始构建智能体》</b>——智能体定义、类型、经典范式<br>
+        <a href="https://github.com/datawhalechina/hello-agents">github.com/datawhalechina/hello-agents</a></li>
+      <li><span class="badge">微软官方</span> <b>Microsoft《AI Agents for Beginners》</b>——Agent 基础概念、工具调用、记忆、多 Agent（中英双语）<br>
+        <a href="https://github.com/microsoft/ai-agents-for-beginners">github.com/microsoft/ai-agents-for-beginners</a></li>
+      <li><span class="badge">Hugging Face</span> <b>《Agents Course》</b>——从入门到构建 Agent 的免费系统课程<br>
+        <a href="https://huggingface.co/learn/agents-course">huggingface.co/learn/agents-course</a> · <a href="https://github.com/huggingface/agents-course">github.com/huggingface/agents-course</a></li>
+      <li><span class="badge">媒体报道</span> <b>中新经纬：WAIC 2025《AI 智能体到底是什么》</b>——用"点咖啡"等生活案例通俗解释 Agent<br>
+        <a href="https://www.jwview.com/jingwei/html/m/07-26/627203.shtml">www.jwview.com/jingwei/html/m/07-26/627203.shtml</a></li>
+    </ul>
+    <div class="note">📌 <b>推荐进一步行动</b>：挑上面任一课程，跟着跑一个最简单的 Agent Demo（微软/HF 教程都有新手步骤），把本资料的"直觉"变成"手会"。这就是 concept-learner 强调的"动手验证"。</div>
+  </div>
+
+  <footer>
+    📚 由 <b>concept-learner</b> Skill 生成的个人学习资料 · AI Agent 概念 · 个人学习设计<br>
+    大模型技术更新快，请以引用的权威官方来源为准。
+  </footer>
+</div>
+
+<script>
+const answers={q1:"no",q2:"c",q3:"b"};
+const explain={
+  q1:"它只会'说'、不能调用系统改数据/查物流，所以只是增强版聊天客服，不是真正的 Agent。真 Agent 至少要能调用工具把事办了。",
+  q2:"脚本是写死的，遇到新情况就崩；Agent 靠大模型推理能临场判断、灵活换方案。这是本质区别。",
+  q3:"Agent 遵循'感知→思考→调用工具→观察→再思考'的循环，直到达成目标。不是一步出答案。"
+};
+const explainText={
+  q4:"参考说法：'聊天机器人像是只会和你讲话的电话；Agent 像是能帮你跑腿办事的小助手——你说想喝咖啡，它自己会去下单、付钱，再回来告诉你办好了。'",
+  q5:"参考例子：比如'自动给所有邮件回'谢谢''的脚本——它虽自动执行，但不能根据每封邮件的内容判断该怎么回，遇到特殊情况就乱套。没有推理应变能力，就不算真 Agent。"
+};
+function submit(){
+  for(let i=1;i<=5;i++){
+    const box=document.getElementById('r'+i);
+    if(i===4||i===5){
+      box.className="r warn"; box.innerHTML=explainText['q'+i]; continue;
+    }
+    const sel=document.querySelector('input[name="q'+i+'"]:checked');
+    if(!sel){box.className="r bad";box.innerHTML="⚠️ 还没选第 "+i+" 题";continue;}
+    if(sel.value===answers['q'+i]){box.className="r ok";box.innerHTML="✅ 正确！"+explain['q'+i];}
+    else{box.className="r bad";box.innerHTML="❌ 不对。"+explain['q'+i];}
+  }
+}
+function reset(){
+  document.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);
+  for(let i=1;i<=5;i++){const b=document.getElementById('r'+i);b.className="r";b.innerHTML="";}
+}
+function toggleAns(n){
+  const box=document.getElementById('r'+n);
+  if(box.innerHTML===""){box.className="r warn";box.innerHTML=explainText['q'+n];}
+  else{box.className="r";box.innerHTML="";}
+}
+</script>
+</body>
+</html>

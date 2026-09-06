@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人学习设计 · 大模型的"上下文"（Context）概念</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --text:#1f2937; --sub:#6b7280;
+    --border:#e5e7eb; --accent:#2563eb; --accent-soft:#eff6ff;
+    --ok:#16a34a; --warn:#d97706; --danger:#dc2626; --code-bg:#f3f4f6;
+    --purple:#7c3aed; --purple-soft:#f5f3ff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.8;padding:24px 16px 70px;}
+  .container{max-width:820px;margin:0 auto;}
+  /* header */
+  .header{background:linear-gradient(135deg,#7c2d12,#ea580c);color:#fff;border-radius:18px;padding:32px 30px;margin-bottom:22px;}
+  .header .tag{display:inline-block;background:rgba(255,255,255,.18);padding:3px 12px;border-radius:20px;font-size:12px;margin-bottom:12px;letter-spacing:1px;}
+  .header h1{font-size:27px;margin-bottom:6px;}
+  .header .sub{opacity:.92;font-size:14.5px;}
+  .header .meta{margin-top:14px;font-size:12.5px;opacity:.85;display:flex;gap:16px;flex-wrap:wrap;}
+  /* sections */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px 26px;margin-bottom:20px;}
+  .card h2{font-size:20px;margin-bottom:16px;display:flex;align-items:center;gap:10px;color:#9a3412;}
+  .card h2 .emo{font-size:22px;}
+  .card h3{font-size:16px;color:#374151;margin:18px 0 8px;}
+  .card p{margin:10px 0;color:#374151;}
+  .lead{background:var(--accent-soft);border-left:4px solid var(--accent);padding:14px 18px;border-radius:8px;font-size:15px;color:#1e3a8a;margin:14px 0;}
+  .note{background:#fffbeb;border-left:4px solid var(--warn);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#92400e;}
+  .ok-box{background:#f0fdf4;border-left:4px solid var(--ok);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#14532d;}
+  .bad-box{background:#fef2f2;border-left:4px solid var(--danger);padding:12px 16px;border-radius:8px;font-size:14px;margin:12px 0;color:#7f1d1d;}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-family:"SF Mono",Consolas,"Courier New",monospace;font-size:13.5px;overflow-x:auto;margin:12px 0;color:#111;}
+  code{font-family:"SF Mono",Consolas,monospace;background:var(--code-bg);padding:2px 6px;border-radius:5px;font-size:.9em;color:#b91c1c;}
+  pre code{background:none;padding:0;color:inherit;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px;}
+  th,td{border:1px solid var(--border);padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:#f1f5f9;color:#9a3412;font-weight:600;}
+  tr:nth-child(even) td{background:#fafafa;}
+  ul,ol{margin:10px 0 10px 24px;}
+  li{margin:6px 0;}
+  /* TOC */
+  .toc{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px 26px;margin-bottom:20px;}
+  .toc b{color:#9a3412;}
+  .toc ol{margin:10px 0 0 22px;}
+  .toc li{margin:5px 0;}
+  .toc a{color:var(--accent);text-decoration:none;}
+  .toc a:hover{text-decoration:underline;}
+  /* 组件 */
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;}
+  .flow .step{background:var(--purple-soft);border:1px solid #ddd6fe;color:var(--purple);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;}
+  .flow .arrow{color:#cbd5e1;font-size:14px;}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0;}
+  @media(max-width:640px){.two-col{grid-template-columns:1fr;}}
+  .vs{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:13.5px;}
+  .vs .title{font-weight:700;margin-bottom:6px;color:#9a3412;}
+  /* quiz */
+  .quiz{border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:14px 0;background:#fafcff;}
+  .quiz .q{font-weight:700;margin-bottom:12px;font-size:15px;}
+  .quiz .options{display:flex;flex-direction:column;gap:8px;margin-bottom:12px;}
+  .quiz .opt{display:flex;align-items:flex-start;gap:10px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px 14px;cursor:pointer;font-size:14px;transition:all .15s;}
+  .quiz .opt:hover{border-color:var(--accent);}
+  .quiz input{margin-top:4px;accent-color:var(--accent);}
+  .btn{background:var(--accent);color:#fff;border:none;padding:10px 26px;border-radius:9px;font-size:14.5px;cursor:pointer;font-weight:600;}
+  .btn:hover{opacity:.9;}
+  .r{margin-top:10px;padding:12px 16px;border-radius:8px;font-size:14px;display:none;}
+  .r.ok{display:block;background:#f0fdf4;color:#14532d;border:1px solid #bbf7d0;}
+  .r.bad{display:block;background:#fef2f2;color:#7f1d1d;border:1px solid #fecaca;}
+  .r.warn{display:block;background:#fffbeb;color:#92400e;border:1px solid #fde68a;}
+  /* answer toggle */
+  .ans-toggle{margin-top:8px;font-size:13px;color:var(--accent);cursor:pointer;user-select:none;}
+  /* source */
+  .src{font-size:13px;}
+  .src li{margin:8px 0;}
+  .src a{color:var(--accent);word-break:break-all;}
+  footer{text-align:center;color:var(--sub);font-size:12.5px;margin-top:30px;}
+  .badge{display:inline-block;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;padding:1px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 头部 -->
+  <div class="header">
+    <span class="tag">concept-learner · 个人学习设计</span>
+    <h1>🧱 大模型的"上下文"（Context）到底指什么？</h1>
+    <div class="sub">为"理解会用"深度定制 · 讲清上下文在 AI 系统里的具体含义，以及它如何左右模型的每一次输出</div>
+    <div class="meta">
+      <span>📅 学习日期：2026-09-06</span>
+      <span>🎯 核心：上下文 = 模型"此刻能看到的全部" = 输出质量的直接开关</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <b>📑 本资料导航</b>
+    <ol>
+      <li><a href="#goal">学习目标</a></li>
+      <li><a href="#question">核心问题</a></li>
+      <li><a href="#explain">个人化解释（"桌面"类比）</a></li>
+      <li><a href="#mechanism">核心机制：上下文如何影响输出</a></li>
+      <li><a href="#scene">应用场景</a></li>
+      <li><a href="#boundary">容易混淆的边界</a></li>
+      <li><a href="#quiz">自测问题</a></li>
+      <li><a href="#source">资料来源</a></li>
+    </ol>
+  </div>
+
+  <!-- 学习目标 -->
+  <div class="card" id="goal">
+    <h2><span class="emo">🎯</span>1. 学习目标（学完能做什么）</h2>
+    <div class="lead">学完本资料，你应当<b>能够</b>：</div>
+    <ol>
+      <li>用自己的话解释<b>"上下文的上下文窗口"</b>到底是什么（不是记忆力，而是模型"此刻眼前摊开的桌面"）。</li>
+      <li>说出上下文窗口里到底装了哪几样东西（系统提示、历史对话、检索资料、你的问题、留给输出的空间）。</li>
+      <li>解释<b>为什么上下文里塞的东西不同，模型的输出就会不同</b>——并讲清它影响的 3 个具体维度（内容对错、风格、是否"失忆"）。</li>
+      <li>说出"超长上下文 ≠ 更好"背后的两个反直觉真相（大海捞针 / context rot、成本平方级增长）。</li>
+    </ol>
+    <div class="note">📌 <b>学习边界（本轮暂不深究）</b>：Transformer 注意力机制的数学推导、KV-cache 底层优化、具体某家模型的 context window 配置界面操作。留到进阶。</div>
+  </div>
+
+  <!-- 核心问题 -->
+  <div class="card" id="question">
+    <h2><span class="emo">❓</span>2. 核心问题（用问题驱动学习）</h2>
+    <p>先带着这 4 个问题去读，读的过程自己找答案：</p>
+    <ol>
+      <li>同样一段对话，<b>为什么模型开头还记得，聊到后面就"忘"了前面说的</b>？是它故意忘，还是有什么东西存不下了？</li>
+      <li>为什么我在开头告诉它"你是个严谨的翻译"，它就真的会一直按严谨口吻说话？<b>那句指令放在哪里起作用了？</b></li>
+      <li>模型是"把整个互联网都记住了"才这么厉害吗？如果是，那为什么把一本长书喂给它，它有时反而抓不住关键信息？</li>
+      <li>做 AI 产品的人常说要"省 token、精挑上下文"，<b>省下的到底是什么</b>？钱？速度？还是准确率？</li>
+    </ol>
+    <p class="note" style="font-size:13px">💡 读完下面内容后，回头看看这 4 个问题你能否独立回答。答不出来，说明某个环节还没吃透，回去再看。</p>
+  </div>
+
+  <!-- 个人化解释 -->
+  <div class="card" id="explain">
+    <h2><span class="emo">🧠</span>3. 个人化解释（先建直觉，再给定义）</h2>
+
+    <h3>3.1 一个决定性的区分：上下文 ≠ 模型的"记忆"</h3>
+    <p>很多人以为模型像人一样有"长期记忆"，其实这是最大误解。把大模型想成<b>两种完全不同的信息来源</b>：</p>
+    <div class="two-col">
+      <div class="vs">
+        <div class="title">📚 长期记忆 = 训练学到的"知识库"</div>
+        <p>模型在<b>出厂前</b>，用海量数据训练，把语言规律和世界知识"刻"进参数里。这部分<b>固定不变</b>，像人的长期记忆/图书馆藏书。它永远"记得" 1+1=2、知道牛顿定律——因为这些在训练时学过了。</p>
+      </div>
+      <div class="vs">
+        <div class="title">🧱 上下文 = 此刻的"工作台/桌面"</div>
+        <p>模型在<b>每次回答前</b>，你能临时递给它的材料——你的问题、历史聊天、贴进去的文档。这部分<b>用完即弃</b>，像人眼前的一张草稿纸。你递多少、递什么，它这次就看什么。</p>
+      </div>
+    </div>
+    <p>一个生动类比（权威来源也常用）：<b>上下文窗口是"眼前的桌面"，不是"图书馆"</b>。图书馆的书它全都读过，但想让它处理哪几页，你得先亲手把那几页<b>摊到桌上</b>。桌面就那么大，摆不下的内容，它这次根本"看不见"。</p>
+    <div class="ok-box">✅ <b>一句话记住</b>：模型的"知识"是它出生时学的；<b>"上下文"是它每次回答时你摆在桌上的材料</b>。回答质量 = 桌上摆了什么 × 怎么摆。</div>
+
+    <h3>3.2 权威定义（用大白话翻译）</h3>
+    <p>IBM 官方技术博客的定义是：上下文窗口（Context Window / Context Length）是<b>一个大语言模型在"同一时刻"能考虑或记住的文本量</b>，单位是 token（词元）。它决定了模型能聊多长的对话而不忘前面的细节、能一次处理多大的文档。</p>
+    <p>更精确地讲，一次回答里<b>所有占地方的东西</b>都在抢这个窗口：</p>
+    <pre>一个请求的上下文窗口里通常装着：
+┌────────────────────────────────────────┐
+│ ① 系统提示（system prompt）—— 角色的"人设和规则" │
+│ ② 对话历史（前面聊过的每一轮）                │
+│ ③ 检索来的资料 / RAG 文档片段 / 粘贴的文本      │
+│ ④ 你这次的提问                                │
+│ ⑤ 预留出来给模型"写回答"的空间（输出也占窗口）   │
+└────────────────────────────────────────┘
+合计 token 数 ≥ 窗口上限 → 超出的部分被丢弃或压缩</pre>
+    <div class="note">⚠️ 很多人不知道的坑：<b>你的输出也占上下文窗口</b>。所以一个号称"能读 100 万 token"的模型，输入能塞很多，但<b>输出往往被单独限制</b>在较小范围——"读得多 ≠ 写得长"。</div>
+  </div>
+
+  <!-- 核心机制 -->
+  <div class="card" id="mechanism">
+    <h2><span class="emo">⚙️</span>4. 核心机制：上下文如何影响模型输出</h2>
+
+    <h3>4.1 token：上下文的基本计量单位</h3>
+    <p>模型不读"字"，它把文字切成一串<b>编号 token</b>。中英文、标点、表情都会被切成 1 到几个 token。所以窗口用 <b>token</b> 而不是"字/词"来计量。同样一段中文，不同分词器切出的 token 数能差 30%~50%——这直接决定你能塞进多少内容。</p>
+    <div class="flow">
+      <span class="step">你好世界 → 约 4 token</span><span class="arrow">→</span>
+      <span class="step">Hello world → 约 2 token</span><span class="arrow">→</span>
+      <span class="step">一个表情 😊 → 1~2 token</span>
+    </div>
+
+    <h3>4.2 决定性逻辑：模型每一句，都是"根据当前桌上所有 token 猜下一个 token"</h3>
+    <p>大模型是<b>自回归</b>的：它每次只生成下一个 token，而这"下一个是什么"，完全取决于它当前能看到的所有内容（= 你的上下文）。这意味着：</p>
+    <div class="lead">输出 = f（桌面上摆的内容）——上下文一变，输出就变。你<b>不是</b>在"问一个全知的 AI"，而是在"给一台只看眼前桌面的机器递材料"。</div>
+
+    <h3>4.3 上下文影响输出的 3 个具体维度</h3>
+    <table>
+      <tr><th>维度</th><th>上下文怎么做手脚</th><th>举例（同样的模型）</th></tr>
+      <tr>
+        <td><b>① 内容对不对</b></td>
+        <td>上下文里的<b>事实性材料</b>决定回答是否"有据"。没贴资料，它只能靠训练知识瞎编；贴了正确文档，它就有据可依。</td>
+        <td>问它"某公司今年财报如何"——只丢问题它会猜；把财报 PDF 贴进上下文，它就能照数据答。</td>
+      </tr>
+      <tr>
+        <td><b>② 风格和角色</b></td>
+        <td>上下文开头的<b>系统提示</b>设定人设、语气、输出格式。这段"看不见的规则"会贯穿整次回答。</td>
+        <td>系统提示写"你是严谨翻译"→ 全程术语准确；写"你是活泼客服"→ 带表情、口语化。模型没变，变的只是上下文里的指令。</td>
+      </tr>
+      <tr>
+        <td><b>③ 是否"记得"上文</b></td>
+        <td>窗口塞满后，<b>最早的对话会被挤掉</b>（或压缩），模型就会"失忆"。上下文多长、是否回传历史，决定它记不记得你前面说过的话。</td>
+        <td>聊了 50 轮后你问"还记得我一开始说要什么吗"——如果历史被挤出窗口，它就答不上来，不是它笨，是桌面摆不下了。</td>
+      </tr>
+    </table>
+
+    <h3>4.4 两个反直觉的真相（为什么"越大越好"是错的）</h3>
+    <div class="bad-box">🚨 <b>真相一：信息摆得越多，模型反而越"抓不住重点"（大海捞针 / context rot）</b><br>
+    把关键信息埋在超长无关内容里，模型不一定找得到。研究（needle-in-a-haystack）发现：<b>上下文越长，模型准确回忆其中信息的能力反而下降</b>，业界叫它 "context rot（上下文腐烂）"。所以上下文是<b>"边际收益递减的有限资源"</b>——不是越多越好，而是<b>越精越好</b>。</div>
+    <div class="bad-box">💸 <b>真相二：窗口越大 = 更贵 + 更慢</b><br>
+    Transformer 的注意力机制计算量大致随长度<b>平方级增长</b>（2 倍长度约 4 倍计算量）。所以 128K 窗口不只是比 8K "大 16 倍"，成本/延迟增长可能更夸张。工程师选窗口，是在<b>"够用、够快、够便宜"</b>三者间权衡，而不是盲目用最大。</div>
+    <div class="ok-box">🔧 <b>由此引出"上下文工程"（Context Engineering）</b>：Anthropic 官方 2025 年提出，核心从"写好提示词"升级为<b>"在有限窗口里，精心策划放什么、怎么放、何时清掉什么"</b>。做 Agent 的人不是在写 prompt，而是在做"上下文配置"这门手艺。</div>
+  </div>
+
+  <!-- 应用场景 -->
+  <div class="card" id="scene">
+    <h2><span class="emo">🌍</span>5. 应用场景（为什么懂它很重要）</h2>
+    <table>
+      <tr><th>场景</th><th>上下文怎么被"操盘"</th><th>为什么相关</th></tr>
+      <tr><td><b>长对话助手</b></td><td>定期把前面几十轮"压缩成一段摘要"，腾出窗口继续聊</td><td>不压缩，聊久了要么超窗口报错，要么最早的指令被挤掉"失忆"</td></tr>
+      <tr><td><b>RAG 知识问答</b></td><td>先从知识库检索最相关的 2~5 段，再塞进上下文回答</td><td>不是把整本手册全塞进去，而是"只摆相关几页"——省 token 又防大海捞针</td></tr>
+      <tr><td><b>读长文档 / 合同</b></td><td>把整份 PDF 塞进大窗口（128K~1M token）</td><td>依赖足够大的窗口能"一次看全"，但注意越大越慢越贵、且可能 context rot</td></tr>
+      <tr><td><b>Agent 多轮自主执行</b></td><td>上下文含工具调用记录、中间推理、外部数据，需不断"清理旧工具结果 + 压缩"</td><td>跑得越久，垃圾 token 越堆越多，上下文工程决定 Agent 会不会"迷失"</td></tr>
+      <tr><td><b>代码助手 / 补全</b></td><td>只把最近 N 个文件和当前编辑区喂给模型</td><td>让上下文小而相关，兼顾速度与准确（如 Copilot 的选择性上下文）</td></tr>
+    </table>
+    <p class="note">💡 共同点：所有场景都围绕一句话——<b>决定输出质量的关键，不是"你能给多少"，而是"你精挑后给了什么、怎么组织"</b>。</p>
+  </div>
+
+  <!-- 容易混淆的边界 -->
+  <div class="card" id="boundary">
+    <h2><span class="emo">🧩</span>6. 容易混淆的边界</h2>
+    <div class="two-col">
+      <div class="vs"><div class="title">🔴 上下文窗口 ≠ 模型的"长期记忆/知识"</div><p>窗口是临时的"工作台"，用完即弃；训练学到的知识是固定的"图书馆"。你关掉对话，窗口清空，但模型参数里的知识还在。</p></div>
+      <div class="vs"><div class="title">🔴 上下文（Context）≠ 上下文学习（ICL）</div><p>"上下文"指给模型的全部 token；"上下文学习"是指<b>不改参数、仅靠提示里给几个示例就让模型学会做新任务</b>的方法（In-Context Learning）。两者相关但不是一个概念——前者是"放什么"，后者是"放了就能学会"的能力。</p></div>
+      <div class="vs"><div class="title">🔴 标称窗口 ≠ 实际可用长度</div><p>很多模型在接近窗口上限时表现明显下降，稳定可用长度可能只有标称值的 60%~70%。别把 128K 当真能"每次都塞满 128K 还好用"。</p></div>
+      <div class="vs"><div class="title">🔴 输入能读多少 ≠ 输出能写多长</div><p>窗口是"输入+输出"共享的预算，且输出常被单独压得更小。能吞 100 万 token 输入，不代表能吐 100 万 token 的答案。</p></div>
+    </div>
+    <div class="note" style="margin-top:4px">💡 <b>一句话辨析</b>：很多人把"上下文窗口大"当成"模型聪明/记忆好"，其实它只决定"一次能摊开多少材料"，不决定模型本身多聪明——聪明靠的是训练，材料靠的是上下文。</div>
+  </div>
+
+  <!-- 我的理解 -->
+  <div class="card" id="myunderstanding">
+    <h2><span class="emo">💭</span>7. 我的理解（个人复盘）</h2>
+    <p>下面这段是我消化后用自己的话写下的（替代"照搬原文"）。如果你通读后发现更像 AI 腔、不像"我"，请替换成你自己的真实感受——下面的句子只作为<b>动笔模板</b>。</p>
+    <div class="lead">让我最"啊原来如此"的，是把上下文比作<b>眼前的桌面、而不是记忆</b>。以前我总以为模型"聊久了会忘"是因为它笨，现在才懂：它每次回答都只看当时桌上摆的那点东西，桌面摆不下、或我把旧纸条抽走了，它自然"看不见"开头的话。这让我在写提示词时多了一个意识——<b>不是给它越多越好，而是把最重要的那句话尽量放得靠前、靠后，别让它淹没在一大堆无关材料里</b>。而且窗口越大越贵越慢，也纠正了我"越大越好"的直觉。</div>
+    <div class="note">📌 <b>待你替换/补充</b>：请在下面补一个你自己的例子——比如你在用某个聊天 AI 或写长文档时，是否真的遇到过"它忘了我开头要求"或"信息太多它抓不住"的情况？</div>
+  </div>
+
+  <!-- 自测问题 -->
+  <div class="card" id="quiz">
+    <h2><span class="emo">✍️</span>8. 自测问题（做完才算懂）</h2>
+    <p style="font-size:13.5px;color:var(--sub)">前 3 题点击判分，后 2 题是口头 Feynman 检验，点开看标准。</p>
+
+    <!-- Q1 -->
+    <div class="quiz">
+      <div class="q">1️⃣ 下面哪个最准确地描述了"上下文窗口"？</div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q1" value="A"> A. 模型在训练时记住的所有知识的容量上限</label>
+        <label class="opt"><input type="radio" name="q1" value="B"> B. 模型在"一次回答"里能同时考虑（看得见）的 token 数量上限</label>
+        <label class="opt"><input type="radio" name="q1" value="C"> C. 模型能一次性吐出的最大回答字数</label>
+        <label class="opt"><input type="radio" name="q1" value="D"> D. 电脑内存里能装下多少个 AI 模型</label>
+      </div>
+      <button class="btn" onclick="check('q1','B')">判分</button>
+      <div class="r" id="r-q1"></div>
+    </div>
+
+    <!-- Q2 -->
+    <div class="quiz">
+      <div class="q">2️⃣ 一个长对话聊到后面，模型突然"忘了"你开头提的要求。最可能的原因是？</div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q2" value="A"> A. 模型被训练数据里的遗忘规则限制了</label>
+        <label class="opt"><input type="radio" name="q2" value="B"> B. 模型宕机重启了，把参数清空了</label>
+        <label class="opt"><input type="radio" name="q2" value="C"> C. 最早的对话内容被挤出了上下文窗口（或被压缩），模型"看不见"了</label>
+        <label class="opt"><input type="radio" name="q2" value="D"> D. 模型想偷懒，故意装作忘记</label>
+      </div>
+      <button class="btn" onclick="check('q2','C')">判分</button>
+      <div class="r" id="r-q2"></div>
+    </div>
+
+    <!-- Q3 -->
+    <div class="quiz">
+      <div class="q">3️⃣ 在同一个模型上做"知识问答"，下列哪种做法最能提升回答的准确性？</div>
+      <div class="options">
+        <label class="opt"><input type="radio" name="q3" value="A"> A. 把无关但很长的背景资料也塞进上下文，让窗口越满越好</label>
+        <label class="opt"><input type="radio" name="q3" value="B"> B. 先检索出最相关的一小段权威资料，放进上下文再提问</label>
+        <label class="opt"><input type="radio" name="q3" value="C"> C. 什么都不放，直接问，模型训练得够好就会</label>
+        <label class="opt"><input type="radio" name="q3" value="D"> D. 把提问重复很多遍，让模型"多听几遍"</label>
+      </div>
+      <button class="btn" onclick="check('q3','B')">判分</button>
+      <div class="r" id="r-q3"></div>
+    </div>
+
+    <!-- Q4 Feynman -->
+    <div class="quiz">
+      <div class="q">4️⃣（口头 · Feynman 检验）给一个完全不懂的人解释：为什么同样一个 AI，你让它"当翻译"它就一直像翻译，让它"当客服"它就一直像客服？</div>
+      <div class="ans-toggle" onclick="toggle('a4')">👉 点开看判断标准</div>
+      <div class="r warn" id="a4" style="display:none">✅ <b>能说到这个程度 = 真懂了</b>："因为我开头放的'系统提示'这段指令，属于上下文的一部分，模型每次生成都看着它，所以角色设定从头贯彻到尾。它没有真的'记住'我是个翻译，只是每次桌上都摆着'你是翻译'这张纸条。"<br><br>如果你只会说"因为它聪明/会角色扮演"，还没讲到<b>上下文里的系统提示如何贯穿影响每次生成</b>，请回看 4.3。</div>
+    </div>
+
+    <!-- Q5 Feynman -->
+    <div class="quiz">
+      <div class="q">5️⃣（口头 · Feynman 检验）朋友说："既然窗口越大越厉害，我是不是该选支持 200 万 token 的模型，把所有资料一次性全塞进去？"你怎么反驳他？</div>
+      <div class="ans-toggle" onclick="toggle('a5')">👉 点开看判断标准</div>
+      <div class="r warn" id="a5" style="display:none">✅ <b>能说到 2 点以上 = 真懂了</b>：① 塞越多，越容易"大海捞针 / context rot"，关键信息反被淹没抓不住；② 窗口越大越贵越慢（注意力计算近平方级增长）；③ 该用的是"精挑最相关几段"的 RAG 思路，而不是全塞。④ 还有标称 vs 实际可用长度的差距。<br><br>如果只点头说不出理由，回看 4.4 的两个"反直觉真相"。</div>
+    </div>
+  </div>
+
+  <!-- 资料来源 -->
+  <div class="card" id="source">
+    <h2><span class="emo">🔗</span>9. 资料来源（均真实可核查）</h2>
+    <p style="font-size:13px;color:var(--sub)">内容为通俗化重新组织，非照搬原文；专业定义以权威来源为准。以下链接均已通过搜索核实存在。</p>
+    <ul class="src">
+      <li>① <b>IBM Think — "What is a context window?"</b>（上下文窗口定义、token、为何有上限，最权威入门）
+        <br>🔗 <a href="https://www.ibm.com/think/topics/context-window" target="_blank">ibm.com/think/topics/context-window</a></li>
+      <li>② <b>Anthropic 官方工程博客 — "Effective context engineering for AI agents"</b>（提出 context rot、上下文是"有限资源"、上下文工程概念）
+        <br>🔗 <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a></li>
+      <li>③ <b>Hugging Face — Agents Course</b>（Hugging Face 官方免费课程，讲模型/工具/上下文）
+        <br>🔗 <a href="https://huggingface.co/learn/agents-course" target="_blank">huggingface.co/learn/agents-course</a> ｜ GitHub: <a href="https://github.com/huggingface/agents-course" target="_blank">github.com/huggingface/agents-course</a></li>
+      <li>④ <b>Datawhale — Hello-Agents</b>（国内知名中文开源教程，讲智能体与上下文管理）
+        <br>🔗 <a href="https://github.com/datawhalechina/hello-agents" target="_blank">github.com/datawhalechina/hello-agents</a></li>
+      <li>⑤ <b>Redis 博客 — "LLM context windows: Understanding and optimizing working memory"</b>（窗口容量、成本、模型对比）
+        <br>🔗 <a href="https://redis.io/blog/llm-context-windows/" target="_blank">redis.io/blog/llm-context-windows/</a></li>
+      <li>⑥ <b>百度百科 — "上下文窗口"</b>（中文综述，含模型窗口演进）
+        <br>🔗 <a href="https://baike.baidu.com/item/上下文窗口/67367067" target="_blank">baike.baidu.com/item/上下文窗口</a></li>
+    </ul>
+  </div>
+
+  <footer>concept-learner · 个人学习设计 ｜ 生成日期 2026-09-06 ｜ 学习概念：大模型的上下文（LLM Context）</footer>
+</div>
+
+<script>
+function check(q, correct){
+  const sel = document.querySelector('input[name="'+q+'"]:checked');
+  const r = document.getElementById('r-'+q);
+  const map = {
+    q1:{A:"训练学的叫'知识'，不是上下文窗口，再想想。", B:"✓ 对！就是一次回答能同时考虑（看见）的 token 上限。", C:"窗口是'输入+输出'共享，不是只算输出，且还包含系统提示等。", D:"上下文窗口和电脑内存/模型数量无关。"},
+    q2:{A:"训练规则不会让模型故意忘对话开头。", B:"模型不会'重启清空'，且清空的是上下文不是参数。", C:"✓ 对！最早的对话被挤出窗口或压缩，模型就看不见了。", D:"模型不会'故意装忘'。"},
+    q3:{A:"填越满越容易'大海捞针'、context rot，反而更差。", B:"✓ 对！精挑最相关一小段塞进上下文 = RAG 的核心思路，最高效准确。", C:"不贴资料只能靠训练知识，很可能过时或编造。", D:"重复提问不会提升准确，白白占窗口。"}
+  };
+  if(!sel){ r.className='r warn'; r.innerHTML='请先选择一个选项再判分。'; return; }
+  const ans = map[q][sel.value];
+  r.innerHTML = ans;
+  if(sel.value===correct){ r.className='r ok'; }
+  else{ r.className='r bad'; }
+}
+function toggle(id){
+  const el=document.getElementById(id);
+  el.style.display = (el.style.display==='block') ? 'none' : 'block';
+}
+</script>
+</body>
+</html>
